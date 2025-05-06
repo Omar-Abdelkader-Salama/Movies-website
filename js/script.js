@@ -60,12 +60,10 @@ function displayItem(item, htmlEndpoint, kind) {
   document.querySelector(htmlEndpoint).appendChild(card);
 }
 
-
-async function displayTvShowsDetails(){
-  const showID = window.location.search.split('=')[1] ;
-  const TvShow = await fetchAPIData(`tv/${showID}`)
-  document.getElementById('show-details').innerHTML = 
-  `
+async function displayTvShowsDetails() {
+  const showID = window.location.search.split('=')[1];
+  const TvShow = await fetchAPIData(`tv/${showID}`);
+  document.getElementById('show-details').innerHTML = `
   <div class="details-top">
           <div>
             <img
@@ -124,13 +122,15 @@ async function displayTvShowsDetails(){
           </div>
         </div>
   `;
-  displayBackgroundImage('show' , `https://image.tmdb.org/t/p/w500${TvShow.backdrop_path}`)
+  displayBackgroundImage(
+    'show',
+    `https://image.tmdb.org/t/p/w500${TvShow.backdrop_path}`
+  );
 }
-
 
 async function displayMovieDetails() {
   movieID = window.location.search.split('=')[1];
-  movie = await fetchAPIData(`movie/${movieID}`);;
+  movie = await fetchAPIData(`movie/${movieID}`);
 
   document.getElementById('movie-details').innerHTML = `
   <div class="details-top">
@@ -197,6 +197,51 @@ async function displayMovieDetails() {
   );
 }
 
+async function PlayingNowMovies() {
+  const { results } = await fetchAPIData('movie/now_playing');
+  console.log(results);
+  results.forEach((movie) => {
+    const div = document.createElement('div');
+    div.classList.add('swiper-slide');
+    div.innerHTML = `
+      <a href="movie-details.html?id=${movie.id}">
+      <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" />
+    </a>
+    <h4 class="swiper-rating">
+      <i class="fas fa-star text-secondary"></i> ${movie.vote_average} / 10
+    </h4>
+    `;
+    document.querySelector('.swiper-wrapper').appendChild(div);
+  });
+  new Swiper('.swiper', {
+    speed: 400,
+    spaceBetween: 100,
+    autoplay: {
+      delay: 4000,
+      disableOnInteraction: false,
+      pauseOnMouseEnter: true,
+    },
+    breakpoints: {
+      320: {
+        slidesPerView: 1,
+        spaceBetween: 20,
+      },
+      600: {
+        slidesPerView: 2,
+        spaceBetween: 30,
+      },
+      800: {
+        slidesPerView: 3,
+        spaceBetween: 40,
+      },
+      1200: {
+        slidesPerView: 4,
+        spaceBetween: 50,
+      },
+    },
+  });
+}
+
 async function fetchAPIData(endpoint) {
   const API_KEY = 'fbef5161f520483fb09d156e4573dc12';
   const api_URL = 'https://api.themoviedb.org/3/';
@@ -240,10 +285,10 @@ function highLight() {
 function displayBackgroundImage(type, url) {
   const overlay = document.createElement('div');
   overlay.style.backgroundImage = `url(${url})`;
-  overlay.classList.add('details_backdrop')
+  overlay.classList.add('details_backdrop');
 
   if (type === 'movie') {
-    document.querySelector('#movie-details').appendChild(overlay); 
+    document.querySelector('#movie-details').appendChild(overlay);
   } else {
     document.querySelector('#show-details').appendChild(overlay);
   }
@@ -255,6 +300,7 @@ function init() {
     case '/':
     case '/index.html':
       displayPopularMovies();
+      PlayingNowMovies();
       break;
     case '/shows.html':
       displayPopularTvShows();
