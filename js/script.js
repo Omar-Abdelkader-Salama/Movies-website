@@ -1,5 +1,14 @@
 const global = {
   CurrentLocation: window.location.pathname,
+  apiKey : 'fbef5161f520483fb09d156e4573dc12' ,
+  apiURL :  'https://api.themoviedb.org/3/',
+  search : {
+    type : '' ,
+    term : '',
+    page : 1 , 
+    totalPages : 1 ,
+    totalResults : 0,
+  },
 };
 
 async function displayPopularMovies() {
@@ -224,17 +233,17 @@ async function PlayingNowMovies() {
     breakpoints: {
       320: {
         slidesPerView: 1,
-        spaceBetween: 20,
+        spaceBetween: 50,
       },
       600: {
         slidesPerView: 2,
-        spaceBetween: 30,
+        spaceBetween: 50,
       },
-      800: {
+      950: {
         slidesPerView: 3,
-        spaceBetween: 40,
+        spaceBetween: 50,
       },
-      1200: {
+      1400: {
         slidesPerView: 4,
         spaceBetween: 50,
       },
@@ -242,9 +251,119 @@ async function PlayingNowMovies() {
   });
 }
 
+async function search(){
+  global.search.type = new URLSearchParams(location.search).get('type');
+  global.search.term = new URLSearchParams(location.search).get('search-term');
+  if(global.search.term.trim() !== '' && global.search.term !== null ){
+    
+    const {results , page , total_pages , total_results} = await fetchAPISearch();
+    global.search.page = page ;
+    global.search.totalPages = total_pages ;
+    global.search.totalResults = total_results ;
+
+    displaySearch(results);
+
+    if (global.search.page === 1 ){
+      document.getElementById('prev').disabled = true ;
+    }
+    if (global.search.page === global.search.totalPages) {
+      document.getElementById('next').disabled = true;
+    }
+
+    document.getElementById('next').addEventListener('click', async () => {
+      console.log(global);
+      global.search.page++;
+      const { results } = await fetchAPISearch();
+      displaySearch(results);
+    });
+
+    document.getElementById('prev').addEventListener('click', async () => {
+      console.log(global);
+      global.search.page--;
+      const { results } = await fetchAPISearch();
+      displaySearch(results);
+    });
+
+  }else{
+    showAlert('Please enter a valid search term')
+  }
+}
+
+
+function displaySearch(results){
+  
+  new Promise((resolve) => {
+    document.getElementById('search-results').innerHTML = '';
+    resolve();
+  })
+  .then(() => {
+    results.forEach(item => {
+      displayItem(item , '#search-results' , global.search.type)
+      window.scrollTo({
+        top: document.querySelector('.search').offsetTop,
+        behavior: 'smooth',
+      });
+    })
+  })
+  if(document.querySelector('.page-counter')){
+    document.querySelector('.page-counter').remove();
+    document.getElementById('search-results-heading').innerHTML = `
+    <h2>${results.length} of ${global.search.totalResults} for ${global.search.term}</h2>
+      `;
+     const div = document.createElement('div');
+    div.classList.add('page-counter');
+    div.innerHTML = `
+        Page ${global.search.page} of ${global.search.totalPages}
+      `;
+  document.querySelector('.pagination').appendChild(div); 
+  }
+  else{
+    document.getElementById('search-results-heading').innerHTML = `
+    <h2>${results.length} of ${global.search.totalResults} for ${global.search.term}</h2>
+      `;
+     const div = document.createElement('div');
+    div.classList.add('page-counter');
+    div.innerHTML = `
+        Page ${global.search.page} of ${global.search.totalPages}
+      `;
+   document.querySelector('.pagination').appendChild(div); 
+  }
+
+    
+}
+
+async function fetchAPISearch(){
+  const API_KEY = global.apiKey;
+    const api_URL = global.apiURL;
+  
+    showSpinner();
+
+  
+    const res = await fetch(
+      `${api_URL }search/${global.search.type}?api_key=${API_KEY}&language=en-US&query=${global.search.term}&page=${global.search.page}`
+    );
+  
+    const data = await res.json();
+  
+    hideSpinner();
+
+    return data ;
+}
+
+
+function showAlert(message, alertType = 'error') {
+  const div = document.createElement('div');
+  div.classList.add('alert' , alertType)
+  div.classList.remove('remove')
+  div.appendChild(document.createTextNode(message))
+  document.querySelector('.search-form').insertBefore(div , document.querySelector('.search-flex'));
+
+  setTimeout(()=>{div.classList.add('remove')} , 2000)
+}
+
 async function fetchAPIData(endpoint) {
-  const API_KEY = 'fbef5161f520483fb09d156e4573dc12';
-  const api_URL = 'https://api.themoviedb.org/3/';
+  const API_KEY = global.apiKey;
+  const api_URL = global.apiURL;
 
   showSpinner();
 
@@ -312,8 +431,8 @@ function init() {
     case '/tv-details.html':
       displayTvShowsDetails();
       break;
-    case 'search.html':
-      console.log('Search page');
+    case '/search.html':
+      search()
       break;
   }
   highLight();
